@@ -24,14 +24,14 @@ export class ClozeNote extends Note {
         // Remove logseq properties as it might cause problems during cloze creation
         result = safeReplace(result, /^\s*(\w|-)*::.*\n?\n?/gm, ""); //Remove md properties
         result = safeReplace(result, /:PROPERTIES:\n((.|\n)*?):END:\n?/gm, ""); //Remove org properties
-    
+
         // --- Add anki-cloze array clozes ---
         if(this.properties.replacecloze) {
             let replaceclozeArr: any;
             if(typeof this.properties.replacecloze == "string" && this.properties.replacecloze.trim() != "") {
                 replaceclozeArr = string_to_arr(this.properties.replacecloze.replace(/(^\s*"|\s*"$)/g, ''));
             }
-            else if (typeof this.properties.replacecloze == "object" && this.properties.replacecloze.constructor == Array) { 
+            else if (typeof this.properties.replacecloze == "object" && this.properties.replacecloze.constructor == Array) {
                 replaceclozeArr = string_to_arr(this.properties.replacecloze.join(','));
             }
             else replaceclozeArr = [];
@@ -60,12 +60,20 @@ export class ClozeNote extends Note {
         }
 
         // --- Add logseq clozes ---
-        result = safeReplace(result, /\{\{cloze (.*?)\}\}/g, (match, group1) => {
-            return `{{c${cloze_id++}::${group1}}}`;
-        });
+        if(_.get(this, "properties.singlecloze") || _.get(this, "page.properties.singlecloze")) {
+            result = safeReplace(result, /\{\{cloze (.*?)\}\}/g, (match, group1) => {
+                return `{{c${cloze_id}::${group1}}}`;
+            });
+        }else{
+            result = safeReplace(result, /\{\{cloze (.*?)\}\}/g, (match, group1) => {
+                return `{{c${cloze_id++}::${group1}}}`;
+            });
+        }
+
+
 
         // --- Add org block clozes ---
-        result = safeReplace(result, /#\+BEGIN_(CLOZE)( .*)?\n((.|\n)*?)#\+END_\1/gi, function (match, g1, g2, g3) { 
+        result = safeReplace(result, /#\+BEGIN_(CLOZE)( .*)?\n((.|\n)*?)#\+END_\1/gi, function (match, g1, g2, g3) {
             return `{{c${cloze_id++}::\n${g3.trim()}\n}}`;
         });
 
